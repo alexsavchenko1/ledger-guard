@@ -21,4 +21,10 @@ class ReconciliationEngine:
         if len(amounts) > 1:
             return ReconciliationStatus.AMOUNT_MISMATCH
 
+        client_ids = {event.client_id for event in events}
+        currencies = {event.currency for event in events}
+
+        if len(client_ids) > 1 or len(currencies) > 1:
+            return ReconciliationStatus.DATA_MISMATCH
+
         return ReconciliationStatus.MATCHED
