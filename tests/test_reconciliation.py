@@ -1,0 +1,47 @@
+from datetime import UTC, datetime
+from decimal import Decimal
+
+from ledger_guard.application.reconciliation import ReconciliationEngine
+from ledger_guard.domain.enums import EventType, ReconciliationStatus
+from ledger_guard.domain.models import OperationEvent
+
+
+def make_event(event_type: EventType) -> OperationEvent:
+    return OperationEvent(
+        event_id=f"event-{event_type}",
+        operation_id="operation-1",
+        event_type=event_type,
+        source="test_service",
+        client_id="client-1",
+        amount=Decimal("15000.00"),
+        currency="RUB",
+        occurred_at=datetime.now(UTC),
+    )
+
+
+def test_returns_pending_when_events_are_missing() -> None:
+    engine = ReconciliationEngine()
+
+    events = [
+        make_event(EventType.DEPOSIT_CREATED),
+        make_event(EventType.MONEY_DEBITED),
+    ]
+
+    result = engine.reconcile(events)
+
+    assert result == ReconciliationStatus.PENDING
+
+
+def test_returns_matched_when_all_events_are_received() -> None:
+    engine = ReconciliationEngine()
+
+    events = [
+        make_event(EventType.DEPOSIT_CREATED),
+        make_event(EventType.MONEY_DEBITED),
+        make_event(EventType.TRANSFER_COMPLETED),
+        make_event(EventType.FUNDS_CREDITED),
+    ]
+
+    result = engine.reconcile(events)
+
+    assert result == ReconciliationStatus.MATCHED
