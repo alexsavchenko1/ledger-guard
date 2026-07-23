@@ -13,7 +13,12 @@ class ReconciliationEngine:
             EventType.FUNDS_CREDITED,
         }
 
-        if required_types.issubset(received_types):
-            return ReconciliationStatus.MATCHED
+        if not required_types.issubset(received_types):
+            return ReconciliationStatus.PENDING
 
-        return ReconciliationStatus.PENDING
+        amounts = {event.amount for event in events}
+
+        if len(amounts) > 1:
+            return ReconciliationStatus.AMOUNT_MISMATCH
+
+        return ReconciliationStatus.MATCHED

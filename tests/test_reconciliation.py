@@ -6,14 +6,17 @@ from ledger_guard.domain.enums import EventType, ReconciliationStatus
 from ledger_guard.domain.models import OperationEvent
 
 
-def make_event(event_type: EventType) -> OperationEvent:
+def make_event(
+    event_type: EventType,
+    amount: Decimal = Decimal("15000.00"),
+) -> OperationEvent:
     return OperationEvent(
         event_id=f"event-{event_type}",
         operation_id="operation-1",
         event_type=event_type,
         source="test_service",
         client_id="client-1",
-        amount=Decimal("15000.00"),
+        amount=amount,
         currency="RUB",
         occurred_at=datetime.now(UTC),
     )
@@ -45,3 +48,21 @@ def test_returns_matched_when_all_events_are_received() -> None:
     result = engine.reconcile(events)
 
     assert result == ReconciliationStatus.MATCHED
+
+
+def test_returns_amount_mismatch_when_amounts_are_different() -> None:
+    engine = ReconciliationEngine()
+
+    events = [
+        make_event(EventType.DEPOSIT_CREATED),
+        make_event(EventType.MONEY_DEBITED),
+        make_event(
+            EventType.TRANSFER_COMPLETED,
+            amount=Decimal("14900.00"),
+        ),
+        make_event(EventType.FUNDS_CREDITED),
+    ]
+
+    result = engine.reconcile(events)
+
+    assert result == ReconciliationStatus.AMOUNT_MISMATCH
