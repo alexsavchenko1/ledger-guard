@@ -22,6 +22,15 @@ def make_event(
     )
 
 
+
+def make_valid_events() -> list[OperationEvent]:
+    return [
+        make_event(EventType.DEPOSIT_CREATED),
+        make_event(EventType.MONEY_DEBITED),
+        make_event(EventType.TRANSFER_COMPLETED),
+        make_event(EventType.FUNDS_CREDITED),
+    ]
+
 def test_returns_pending_when_events_are_missing() -> None:
     engine = ReconciliationEngine()
 
@@ -62,6 +71,23 @@ def test_returns_amount_mismatch_when_amounts_are_different() -> None:
         ),
         make_event(EventType.FUNDS_CREDITED),
     ]
+
+    result = engine.reconcile(events)
+
+    assert result == ReconciliationStatus.AMOUNT_MISMATCH
+
+
+def test_duplicate_event_with_different_amount_returns_mismatch() -> None:
+    engine = ReconciliationEngine()
+    events = make_valid_events()
+
+    duplicate_event = make_event(
+        EventType.TRANSFER_COMPLETED,
+        amount=Decimal("14900.00"),
+    )
+    duplicate_event.event_id = "duplicate-event"
+
+    events.append(duplicate_event)
 
     result = engine.reconcile(events)
 
