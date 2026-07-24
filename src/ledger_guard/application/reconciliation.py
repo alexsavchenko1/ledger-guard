@@ -5,12 +5,19 @@ from ledger_guard.domain.models import OperationEvent
 class ReconciliationEngine:
     def reconcile(self, events: list[OperationEvent]) -> ReconciliationStatus:
         unique_events = []
-        seen_event_ids = set()
+        events_by_id = {}
 
         for event in events:
-            if event.event_id not in seen_event_ids:
-                unique_events.append(event)
-                seen_event_ids.add(event.event_id)
+            existing_event = events_by_id.get(event.event_id)
+
+            if existing_event is not None:
+                if existing_event != event:
+                    return ReconciliationStatus.DATA_MISMATCH
+
+                continue
+
+            events_by_id[event.event_id] = event
+            unique_events.append(event)
 
         received_types = {event.event_type for event in unique_events}
 

@@ -117,3 +117,37 @@ def test_returns_data_mismatch_for_different_operation_ids() -> None:
     result = engine.reconcile(events)
 
     assert result == ReconciliationStatus.DATA_MISMATCH
+
+
+def test_returns_data_mismatch_when_same_event_id_has_different_data() -> None:
+    engine = ReconciliationEngine()
+    events = make_valid_events()
+
+    duplicate_event = make_event(
+        EventType.TRANSFER_COMPLETED,
+        amount=Decimal("14900.00"),
+    )
+    duplicate_event.event_id = events[2].event_id
+
+    events.append(duplicate_event)
+
+    result = engine.reconcile(events)
+
+    assert result == ReconciliationStatus.DATA_MISMATCH
+
+
+def test_returns_data_mismatch_when_same_event_id_has_different_data() -> None:
+    engine = ReconciliationEngine()
+    events = make_valid_events()
+
+    duplicate_event = make_event(
+        EventType.TRANSFER_COMPLETED,
+        amount=Decimal("14900.00"),
+    )
+    duplicate_event.event_id = events[2].event_id
+
+    events.append(duplicate_event)
+
+    result = engine.reconcile(events)
+
+    assert result == ReconciliationStatus.DATA_MISMATCH
