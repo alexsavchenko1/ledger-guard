@@ -9,6 +9,7 @@ from ledger_guard.domain.models import OperationEvent
 def make_event(
     event_type: EventType,
     amount: Decimal = Decimal("15000.00"),
+    occurred_at: datetime | None = None,
 ) -> OperationEvent:
     return OperationEvent(
         event_id=f"event-{event_type}",
@@ -23,7 +24,7 @@ def make_event(
         client_id="client-1",
         amount=amount,
         currency="RUB",
-        occurred_at=datetime.now(UTC),
+        occurred_at=occurred_at or datetime.now(UTC),
     )
 
 
@@ -164,3 +165,59 @@ def test_returns_data_mismatch_for_wrong_event_source() -> None:
     result = engine.reconcile(events)
 
     assert result == ReconciliationStatus.DATA_MISMATCH
+
+
+def test_returns_invalid_sequence_for_wrong_event_order() -> None:
+    engine = ReconciliationEngine()
+    base_time = datetime(2026, 7, 24, 12, 0, tzinfo=UTC)
+
+    events = [
+        make_event(
+            EventType.DEPOSIT_CREATED,
+            occurred_at=base_time,
+        ),
+        make_event(
+            EventType.MONEY_DEBITED,
+            occurred_at=base_time.replace(minute=3),
+        ),
+        make_event(
+            EventType.TRANSFER_COMPLETED,
+            occurred_at=base_time.replace(minute=2),
+        ),
+        make_event(
+            EventType.FUNDS_CREDITED,
+            occurred_at=base_time.replace(minute=4),
+        ),
+    ]
+
+    result = engine.reconcile(events)
+
+    assert result == ReconciliationStatus.INVALID_SEQUENCE
+
+
+def test_returns_invalid_sequence_for_wrong_event_order() -> None:
+    engine = ReconciliationEngine()
+    base_time = datetime(2026, 7, 24, 12, 0, tzinfo=UTC)
+
+    events = [
+        make_event(
+            EventType.DEPOSIT_CREATED,
+            occurred_at=base_time,
+        ),
+        make_event(
+            EventType.MONEY_DEBITED,
+            occurred_at=base_time.replace(minute=3),
+        ),
+        make_event(
+            EventType.TRANSFER_COMPLETED,
+            occurred_at=base_time.replace(minute=2),
+        ),
+        make_event(
+            EventType.FUNDS_CREDITED,
+            occurred_at=base_time.replace(minute=4),
+        ),
+    ]
+
+    result = engine.reconcile(events)
+
+    assert result == ReconciliationStatus.INVALID_SEQUENCE
