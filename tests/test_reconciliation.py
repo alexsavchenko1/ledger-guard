@@ -98,10 +98,7 @@ def test_exact_duplicate_does_not_change_result() -> None:
     engine = ReconciliationEngine()
     events = make_valid_events()
 
-    duplicate_event = make_event(EventType.TRANSFER_COMPLETED)
-    duplicate_event.event_id = events[2].event_id
-
-    events.append(duplicate_event)
+    events.append(events[2])
 
     result = engine.reconcile(events)
 
