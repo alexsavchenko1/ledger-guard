@@ -106,3 +106,14 @@ def test_exact_duplicate_does_not_change_result() -> None:
     result = engine.reconcile(events)
 
     assert result == ReconciliationStatus.MATCHED
+
+
+def test_returns_data_mismatch_for_different_operation_ids() -> None:
+    engine = ReconciliationEngine()
+    events = make_valid_events()
+
+    events[2].operation_id = "operation-2"
+
+    result = engine.reconcile(events)
+
+    assert result == ReconciliationStatus.DATA_MISMATCH
