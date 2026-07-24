@@ -47,4 +47,15 @@ class ReconciliationEngine:
         if len(client_ids) > 1 or len(currencies) > 1:
             return ReconciliationStatus.DATA_MISMATCH
 
+        expected_sources = {
+            EventType.DEPOSIT_CREATED: "funding_service",
+            EventType.MONEY_DEBITED: "bank_service",
+            EventType.TRANSFER_COMPLETED: "payment_service",
+            EventType.FUNDS_CREDITED: "investment_ledger",
+        }
+
+        for event in unique_events:
+            if event.source != expected_sources[event.event_type]:
+                return ReconciliationStatus.DATA_MISMATCH
+
         return ReconciliationStatus.MATCHED

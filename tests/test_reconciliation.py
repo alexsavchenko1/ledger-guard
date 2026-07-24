@@ -14,7 +14,12 @@ def make_event(
         event_id=f"event-{event_type}",
         operation_id="operation-1",
         event_type=event_type,
-        source="test_service",
+        source={
+            EventType.DEPOSIT_CREATED: "funding_service",
+            EventType.MONEY_DEBITED: "bank_service",
+            EventType.TRANSFER_COMPLETED: "payment_service",
+            EventType.FUNDS_CREDITED: "investment_ledger",
+        }[event_type],
         client_id="client-1",
         amount=amount,
         currency="RUB",
@@ -144,6 +149,17 @@ def test_returns_data_mismatch_when_same_event_id_has_different_data() -> None:
     duplicate_event.event_id = events[2].event_id
 
     events.append(duplicate_event)
+
+    result = engine.reconcile(events)
+
+    assert result == ReconciliationStatus.DATA_MISMATCH
+
+
+def test_returns_data_mismatch_for_wrong_event_source() -> None:
+    engine = ReconciliationEngine()
+    events = make_valid_events()
+
+    events[2].source = "bank_service"
 
     result = engine.reconcile(events)
 
