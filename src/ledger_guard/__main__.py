@@ -22,6 +22,9 @@ def main() -> None:
     except KeyError as error:
         print(f"В событии отсутствует поле: {error.args[0]}")
         return
+    except ValueError as error:
+        print(f"Некорректное значение в событии: {error}")
+        return
 
     if not events:
         print(f"В файле нет событий: {path}")

@@ -1,0 +1,12 @@
+[
+  {
+    "event_id": "event-1",
+    "operation_id": "operation-1",
+    "event_type": "PAYMENT_UNKNOWN",
+    "source": "payment_service",
+    "client_id": "client-1",
+    "amount": "15000.00",
+    "currency": "RUB",
+    "occurred_at": "2026-07-24T12:00:00+00:00"
+  }
+]
