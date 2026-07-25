@@ -83,7 +83,7 @@ def test_returns_amount_mismatch_when_amounts_are_different() -> None:
     assert result == ReconciliationStatus.AMOUNT_MISMATCH
 
 
-def test_duplicate_event_with_different_amount_returns_mismatch() -> None:
+def test_repeated_event_type_with_different_amount_returns_data_mismatch() -> None:
     engine = ReconciliationEngine()
     events = make_valid_events()
 
@@ -97,7 +97,7 @@ def test_duplicate_event_with_different_amount_returns_mismatch() -> None:
 
     result = engine.reconcile(events)
 
-    assert result == ReconciliationStatus.AMOUNT_MISMATCH
+    assert result == ReconciliationStatus.DATA_MISMATCH
 
 
 def test_exact_duplicate_does_not_change_result() -> None:
@@ -221,3 +221,17 @@ def test_returns_invalid_sequence_for_wrong_event_order() -> None:
     result = engine.reconcile(events)
 
     assert result == ReconciliationStatus.INVALID_SEQUENCE
+
+
+def test_returns_data_mismatch_for_two_events_of_same_type() -> None:
+    engine = ReconciliationEngine()
+    events = make_valid_events()
+
+    second_event = make_event(EventType.TRANSFER_COMPLETED)
+    second_event.event_id = "event-transfer-second"
+
+    events.append(second_event)
+
+    result = engine.reconcile(events)
+
+    assert result == ReconciliationStatus.DATA_MISMATCH

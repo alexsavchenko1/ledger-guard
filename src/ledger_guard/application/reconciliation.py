@@ -20,6 +20,15 @@ class ReconciliationEngine:
             events_by_id[event.event_id] = event
             unique_events.append(event)
 
+        seen_types = set()
+
+        # Для каждой операции ожидаем одно событие каждого типа.
+        for event in unique_events:
+            if event.event_type in seen_types:
+                return ReconciliationStatus.DATA_MISMATCH
+
+            seen_types.add(event.event_type)
+
         received_types = {event.event_type for event in unique_events}
 
         required_types = {
