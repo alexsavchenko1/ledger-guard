@@ -19,6 +19,9 @@ def main() -> None:
     except json.JSONDecodeError:
         print(f"Некорректный JSON в файле: {path}")
         return
+    except KeyError as error:
+        print(f"В событии отсутствует поле: {error.args[0]}")
+        return
 
     if not events:
         print(f"В файле нет событий: {path}")
