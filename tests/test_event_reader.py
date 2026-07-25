@@ -41,3 +41,31 @@ def test_read_events_rejects_non_object_item(tmp_path) -> None:
         assert str(error) == "Каждое событие должно быть JSON-объектом"
     else:
         raise AssertionError("Ожидалась ошибка ValueError")
+
+
+def test_read_events_rejects_negative_amount(tmp_path) -> None:
+    file_path = tmp_path / "events.json"
+    file_path.write_text(
+        '''
+[
+  {
+    "event_id": "event-1",
+    "operation_id": "operation-1",
+    "event_type": "DEPOSIT_CREATED",
+    "source": "funding_service",
+    "client_id": "client-1",
+    "amount": "-100.00",
+    "currency": "RUB",
+    "occurred_at": "2026-07-24T12:00:00+00:00"
+  }
+]
+''',
+        encoding="utf-8",
+    )
+
+    try:
+        read_events(str(file_path))
+    except ValueError as error:
+        assert str(error) == "Сумма события должна быть больше нуля"
+    else:
+        raise AssertionError("Ожидалась ошибка ValueError")

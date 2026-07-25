@@ -22,13 +22,18 @@ def read_events(path: str) -> list[OperationEvent]:
         if not isinstance(item, dict):
             raise ValueError("Каждое событие должно быть JSON-объектом")
 
+        amount = Decimal(item["amount"])
+
+        if amount <= 0:
+            raise ValueError("Сумма события должна быть больше нуля")
+
         event = OperationEvent(
             event_id=item["event_id"],
             operation_id=item["operation_id"],
             event_type=EventType(item["event_type"]),
             source=item["source"],
             client_id=item["client_id"],
-            amount=Decimal(item["amount"]),
+            amount=amount,
             currency=item["currency"],
             occurred_at=datetime.fromisoformat(item["occurred_at"]),
         )
