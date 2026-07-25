@@ -10,7 +10,11 @@ def main() -> None:
     if len(sys.argv) > 1:
         path = sys.argv[1]
 
-    events = read_events(path)
+    try:
+        events = read_events(path)
+    except FileNotFoundError:
+        print(f"Файл не найден: {path}")
+        return
 
     engine = ReconciliationEngine()
     result = engine.reconcile(events)
