@@ -13,6 +13,9 @@ def read_events(path: str) -> list[OperationEvent]:
     with file_path.open(encoding="utf-8") as file:
         raw_events = json.load(file)
 
+    if not isinstance(raw_events, list):
+        raise ValueError("JSON должен содержать список событий")
+
     events = []
 
     for item in raw_events:

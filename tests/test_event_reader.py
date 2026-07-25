@@ -11,3 +11,18 @@ def test_read_events_from_json() -> None:
     assert events[0].event_type == EventType.DEPOSIT_CREATED
     assert events[0].amount == Decimal("15000.00")
     assert events[3].source == "investment_ledger"
+
+
+def test_read_events_rejects_json_object(tmp_path) -> None:
+    file_path = tmp_path / "events.json"
+    file_path.write_text(
+        '{"event_id": "event-1"}',
+        encoding="utf-8",
+    )
+
+    try:
+        read_events(str(file_path))
+    except ValueError as error:
+        assert str(error) == "JSON должен содержать список событий"
+    else:
+        raise AssertionError("Ожидалась ошибка ValueError")
