@@ -1,3 +1,4 @@
+import json
 import sys
 
 from ledger_guard.application.reconciliation import ReconciliationEngine
@@ -14,6 +15,9 @@ def main() -> None:
         events = read_events(path)
     except FileNotFoundError:
         print(f"Файл не найден: {path}")
+        return
+    except json.JSONDecodeError:
+        print(f"Некорректный JSON в файле: {path}")
         return
 
     if not events:

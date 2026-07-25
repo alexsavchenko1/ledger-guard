@@ -1,0 +1,5 @@
+[
+  {
+    "event_id": "event-1",
+    "operation_id": "operation-1",
+    "event_type": "DEPOSIT_CREATED"
