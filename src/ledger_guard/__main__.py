@@ -16,6 +16,10 @@ def main() -> None:
         print(f"Файл не найден: {path}")
         return
 
+    if not events:
+        print(f"В файле нет событий: {path}")
+        return
+
     engine = ReconciliationEngine()
     result = engine.reconcile(events)
 
