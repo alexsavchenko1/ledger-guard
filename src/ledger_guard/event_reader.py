@@ -27,6 +27,11 @@ def read_events(path: str) -> list[OperationEvent]:
         if amount <= 0:
             raise ValueError("Сумма события должна быть больше нуля")
 
+        currency = item["currency"]
+
+        if currency != "RUB":
+            raise ValueError("Поддерживается только валюта RUB")
+
         event = OperationEvent(
             event_id=item["event_id"],
             operation_id=item["operation_id"],
@@ -34,7 +39,7 @@ def read_events(path: str) -> list[OperationEvent]:
             source=item["source"],
             client_id=item["client_id"],
             amount=amount,
-            currency=item["currency"],
+            currency=currency,
             occurred_at=datetime.fromisoformat(item["occurred_at"]),
         )
         events.append(event)
