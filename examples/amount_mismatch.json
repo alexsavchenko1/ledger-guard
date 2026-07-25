@@ -1,0 +1,42 @@
+[
+  {
+    "event_id": "event-1",
+    "operation_id": "operation-2",
+    "event_type": "DEPOSIT_CREATED",
+    "source": "funding_service",
+    "client_id": "client-2",
+    "amount": "15000.00",
+    "currency": "RUB",
+    "occurred_at": "2026-07-24T12:00:00+00:00"
+  },
+  {
+    "event_id": "event-2",
+    "operation_id": "operation-2",
+    "event_type": "MONEY_DEBITED",
+    "source": "bank_service",
+    "client_id": "client-2",
+    "amount": "15000.00",
+    "currency": "RUB",
+    "occurred_at": "2026-07-24T12:00:01+00:00"
+  },
+  {
+    "event_id": "event-3",
+    "operation_id": "operation-2",
+    "event_type": "TRANSFER_COMPLETED",
+    "source": "payment_service",
+    "client_id": "client-2",
+    "amount": "14900.00",
+    "currency": "RUB",
+    "occurred_at": "2026-07-24T12:00:02+00:00"
+  },
+  {
+    "event_id": "event-4",
+    "operation_id": "operation-2",
+    "event_type": "FUNDS_CREDITED",
+    "source": "investment_ledger",
+    "client_id": "client-2",
+    "amount": "15000.00",
+    "currency": "RUB",
+    "occurred_at": "2026-07-24T12:00:03+00:00"
+  }
+]
