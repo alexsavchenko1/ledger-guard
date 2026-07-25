@@ -35,15 +35,19 @@ def read_events(path: str) -> list[OperationEvent]:
             raise ValueError("Сумма события должна быть больше нуля")
 
         currency = item["currency"]
+        source = item["source"]
 
         if currency != "RUB":
             raise ValueError("Поддерживается только валюта RUB")
+
+        if not source:
+            raise ValueError("Источник события не должен быть пустым")
 
         event = OperationEvent(
             event_id=event_id,
             operation_id=operation_id,
             event_type=EventType(item["event_type"]),
-            source=item["source"],
+            source=source,
             client_id=client_id,
             amount=amount,
             currency=currency,

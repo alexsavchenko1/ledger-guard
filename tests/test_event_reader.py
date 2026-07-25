@@ -125,3 +125,31 @@ def test_read_events_rejects_empty_identifiers(tmp_path) -> None:
         assert str(error) == "Идентификаторы события не должны быть пустыми"
     else:
         raise AssertionError("Ожидалась ошибка ValueError")
+
+
+def test_read_events_rejects_empty_source(tmp_path) -> None:
+    file_path = tmp_path / "events.json"
+    file_path.write_text(
+        '''
+[
+  {
+    "event_id": "event-1",
+    "operation_id": "operation-1",
+    "event_type": "DEPOSIT_CREATED",
+    "source": "",
+    "client_id": "client-1",
+    "amount": "100.00",
+    "currency": "RUB",
+    "occurred_at": "2026-07-24T12:00:00+00:00"
+  }
+]
+''',
+        encoding="utf-8",
+    )
+
+    try:
+        read_events(str(file_path))
+    except ValueError as error:
+        assert str(error) == "Источник события не должен быть пустым"
+    else:
+        raise AssertionError("Ожидалась ошибка ValueError")
