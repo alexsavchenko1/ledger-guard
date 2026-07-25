@@ -19,6 +19,9 @@ def read_events(path: str) -> list[OperationEvent]:
     events = []
 
     for item in raw_events:
+        if not isinstance(item, dict):
+            raise ValueError("Каждое событие должно быть JSON-объектом")
+
         event = OperationEvent(
             event_id=item["event_id"],
             operation_id=item["operation_id"],
