@@ -97,3 +97,91 @@ def test_process_message_rejects_invalid_json() -> None:
             result_repository=result_repository,
             engine=engine,
         )
+
+
+def make_operation_message(
+    operation_id: str,
+    event_type: EventType,
+    source: str,
+    occurred_at: str,
+) -> bytes:
+    event_data = {
+        "event_id": f"evt-kafka-test-{uuid4()}",
+        "operation_id": operation_id,
+        "event_type": event_type.value,
+        "source": source,
+        "client_id": "client-001",
+        "amount": "1000.00",
+        "currency": "RUB",
+        "occurred_at": occurred_at,
+    }
+
+    return json.dumps(event_data).encode("utf-8")
+
+
+def test_four_messages_complete_reconciliation(
+    operation_id: str,
+) -> None:
+    event_repository = EventRepository(DATABASE_URL)
+    result_repository = ResultRepository(DATABASE_URL)
+    engine = ReconciliationEngine()
+
+    messages = [
+        make_operation_message(
+            operation_id=operation_id,
+            event_type=EventType.DEPOSIT_CREATED,
+            source="funding_service",
+            occurred_at="2026-07-26T12:00:00+00:00",
+        ),
+        make_operation_message(
+            operation_id=operation_id,
+            event_type=EventType.MONEY_DEBITED,
+            source="bank_service",
+            occurred_at="2026-07-26T12:01:00+00:00",
+        ),
+        make_operation_message(
+            operation_id=operation_id,
+            event_type=EventType.TRANSFER_COMPLETED,
+            source="payment_service",
+            occurred_at="2026-07-26T12:02:00+00:00",
+        ),
+        make_operation_message(
+            operation_id=operation_id,
+            event_type=EventType.FUNDS_CREDITED,
+            source="investment_ledger",
+            occurred_at="2026-07-26T12:03:00+00:00",
+        ),
+    ]
+
+    expected_statuses = [
+        ReconciliationStatus.PENDING,
+        ReconciliationStatus.PENDING,
+        ReconciliationStatus.PENDING,
+        ReconciliationStatus.MATCHED,
+    ]
+
+    for expected_count, (message, expected_status) in enumerate(
+        zip(messages, expected_statuses, strict=True),
+        start=1,
+    ):
+        _, saved, events_count, status = process_message(
+            raw_value=message,
+            event_repository=event_repository,
+            result_repository=result_repository,
+            engine=engine,
+        )
+
+        assert saved is True
+        assert events_count == expected_count
+        assert status == expected_status
+
+    stored_events = event_repository.get_by_operation_id(operation_id)
+    stored_result = result_repository.get_by_operation_id(operation_id)
+
+    assert len(stored_events) == 4
+    assert stored_result is not None
+
+    stored_status, stored_events_count, _ = stored_result
+
+    assert stored_status == ReconciliationStatus.MATCHED.value
+    assert stored_events_count == 4
