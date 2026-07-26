@@ -82,6 +82,11 @@ def main() -> None:
                 events_count=len(operation_events),
             )
 
+            consumer.commit(
+                message=message,
+                asynchronous=False,
+            )
+
             print()
             print("Получено событие:")
             print(event)
@@ -89,6 +94,10 @@ def main() -> None:
             print("Событие сохранено:", saved)
             print("Количество событий операции:", len(operation_events))
             print("Статус сверки:", status.value)
+            print(
+                "Kafka offset подтверждён:",
+                message.offset(),
+            )
 
     except KeyboardInterrupt:
         print("\nConsumer остановлен")
