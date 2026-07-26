@@ -7,7 +7,11 @@ import pytest
 from ledger_guard.application.reconciliation import ReconciliationEngine
 from ledger_guard.domain.enums import EventType, ReconciliationStatus
 from ledger_guard.infrastructure.event_repository import EventRepository
-from ledger_guard.infrastructure.kafka_consumer import process_message
+from ledger_guard.infrastructure.kafka_consumer import (
+    DLQ_TOPIC,
+    process_message,
+    send_to_dlq,
+)
 from ledger_guard.infrastructure.result_repository import ResultRepository
 
 

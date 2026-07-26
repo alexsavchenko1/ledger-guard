@@ -1,8 +1,9 @@
 import json
 import os
 from decimal import InvalidOperation
+from typing import Protocol
 
-from confluent_kafka import Consumer
+from confluent_kafka import Consumer, Producer
 
 from ledger_guard.application.reconciliation import ReconciliationEngine
 from ledger_guard.domain.enums import ReconciliationStatus
@@ -13,11 +14,58 @@ from ledger_guard.infrastructure.result_repository import ResultRepository
 
 
 TOPIC = "operation-events"
+DLQ_TOPIC = "operation-events-dlq"
 
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
     "postgresql://ledger_guard:ledger_guard@localhost:5433/ledger_guard",
 )
+
+
+class DlqProducer(Protocol):
+    def produce(self, topic: str, value: bytes) -> None:
+        pass
+
+    def flush(self, timeout: float) -> int:
+        pass
+
+
+def send_to_dlq(
+    raw_value: bytes,
+    error: Exception,
+    source_topic: str,
+    source_partition: int,
+    source_offset: int,
+    producer: DlqProducer,
+) -> None:
+    dlq_message = {
+        "source_topic": source_topic,
+        "source_partition": source_partition,
+        "source_offset": source_offset,
+        "error_type": type(error).__name__,
+        "error_message": str(error),
+        "original_message": raw_value.decode(
+            "utf-8",
+            errors="replace",
+        ),
+    }
+
+    serialized_message = json.dumps(
+        dlq_message,
+        ensure_ascii=False,
+    ).encode("utf-8")
+
+    producer.produce(
+        DLQ_TOPIC,
+        value=serialized_message,
+    )
+
+    messages_left = producer.flush(10.0)
+
+    if messages_left != 0:
+        raise RuntimeError(
+            "Не удалось отправить сообщение в DLQ"
+        )
 
 
 def process_message(
@@ -48,14 +96,20 @@ def process_message(
 
 
 def main() -> None:
+    kafka_config = {
+        "bootstrap.servers": "localhost:9092",
+    }
+
     consumer = Consumer(
         {
-            "bootstrap.servers": "localhost:9092",
+            **kafka_config,
             "group.id": "ledger-guard-debug",
             "auto.offset.reset": "earliest",
             "enable.auto.commit": False,
         }
     )
+
+    producer = Producer(kafka_config)
 
     event_repository = EventRepository(DATABASE_URL)
     result_repository = ResultRepository(DATABASE_URL)
@@ -97,7 +151,24 @@ def main() -> None:
                 ValueError,
                 InvalidOperation,
             ) as error:
-                print(f"Не удалось разобрать сообщение: {error}")
+                send_to_dlq(
+                    raw_value=raw_value,
+                    error=error,
+                    source_topic=message.topic(),
+                    source_partition=message.partition(),
+                    source_offset=message.offset(),
+                    producer=producer,
+                )
+
+                consumer.commit(
+                    message=message,
+                    asynchronous=False,
+                )
+
+                print()
+                print("Битое сообщение отправлено в DLQ")
+                print("Ошибка:", error)
+                print("Kafka offset подтверждён:", message.offset())
                 continue
 
             consumer.commit(
@@ -119,6 +190,7 @@ def main() -> None:
     except KeyboardInterrupt:
         print("\nConsumer остановлен")
     finally:
+        producer.flush(5.0)
         consumer.close()
 
 
