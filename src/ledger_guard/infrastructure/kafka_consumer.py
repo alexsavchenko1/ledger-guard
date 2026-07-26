@@ -1,12 +1,19 @@
 import json
+import os
 from decimal import InvalidOperation
 
 from confluent_kafka import Consumer
 
 from ledger_guard.event_reader import parse_event
+from ledger_guard.infrastructure.event_repository import EventRepository
 
 
 TOPIC = "operation-events"
+
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    "postgresql://ledger_guard:ledger_guard@localhost:5433/ledger_guard",
+)
 
 
 def main() -> None:
@@ -18,6 +25,8 @@ def main() -> None:
             "enable.auto.commit": False,
         }
     )
+
+    repository = EventRepository(DATABASE_URL)
 
     consumer.subscribe([TOPIC])
 
@@ -55,25 +64,21 @@ def main() -> None:
                 print(f"Не удалось разобрать сообщение: {error}")
                 continue
 
-            print()
-            print("1. Kafka вернула байты:")
-            print(type(raw_value))
-            print(raw_value)
+            saved = repository.save(event)
+            operation_events = repository.get_by_operation_id(
+                event.operation_id
+            )
 
             print()
-            print("2. Байты декодированы в строку:")
-            print(type(json_text))
-            print(json_text)
-
-            print()
-            print("3. JSON-строка преобразована в словарь:")
-            print(type(event_data))
-            print(event_data)
-
-            print()
-            print("4. Словарь преобразован в OperationEvent:")
-            print(type(event))
+            print("Получено событие:")
             print(event)
+
+            print()
+            print("Событие сохранено:", saved)
+            print(
+                "Количество событий операции:",
+                len(operation_events),
+            )
 
     except KeyboardInterrupt:
         print("\nConsumer остановлен")
