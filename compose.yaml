@@ -17,5 +17,12 @@ services:
       timeout: 3s
       retries: 10
 
+
+  kafka:
+    image: apache/kafka:4.3.1
+    container_name: ledger-guard-kafka
+    ports:
+      - "9092:9092"
+
 volumes:
   ledger_guard_postgres_data:
