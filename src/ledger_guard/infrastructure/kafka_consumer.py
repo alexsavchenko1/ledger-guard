@@ -21,6 +21,11 @@ DATABASE_URL = os.getenv(
     "postgresql://ledger_guard:ledger_guard@localhost:5433/ledger_guard",
 )
 
+KAFKA_BOOTSTRAP_SERVERS = os.getenv(
+    "KAFKA_BOOTSTRAP_SERVERS",
+    "localhost:9092",
+)
+
 
 class DlqProducer(Protocol):
     def produce(self, topic: str, value: bytes) -> None:
@@ -97,7 +102,7 @@ def process_message(
 
 def main() -> None:
     kafka_config = {
-        "bootstrap.servers": "localhost:9092",
+        "bootstrap.servers": KAFKA_BOOTSTRAP_SERVERS,
     }
 
     consumer = Consumer(
