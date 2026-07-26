@@ -4,8 +4,10 @@ from decimal import InvalidOperation
 
 from confluent_kafka import Consumer
 
+from ledger_guard.application.reconciliation import ReconciliationEngine
 from ledger_guard.event_reader import parse_event
 from ledger_guard.infrastructure.event_repository import EventRepository
+from ledger_guard.infrastructure.result_repository import ResultRepository
 
 
 TOPIC = "operation-events"
@@ -26,7 +28,9 @@ def main() -> None:
         }
     )
 
-    repository = EventRepository(DATABASE_URL)
+    event_repository = EventRepository(DATABASE_URL)
+    result_repository = ResultRepository(DATABASE_URL)
+    engine = ReconciliationEngine()
 
     consumer.subscribe([TOPIC])
 
@@ -64,21 +68,27 @@ def main() -> None:
                 print(f"Не удалось разобрать сообщение: {error}")
                 continue
 
-            saved = repository.save(event)
-            operation_events = repository.get_by_operation_id(
+            saved = event_repository.save(event)
+
+            operation_events = event_repository.get_by_operation_id(
                 event.operation_id
+            )
+
+            status = engine.reconcile(operation_events)
+
+            result_repository.save(
+                operation_id=event.operation_id,
+                status=status,
+                events_count=len(operation_events),
             )
 
             print()
             print("Получено событие:")
             print(event)
 
-            print()
             print("Событие сохранено:", saved)
-            print(
-                "Количество событий операции:",
-                len(operation_events),
-            )
+            print("Количество событий операции:", len(operation_events))
+            print("Статус сверки:", status.value)
 
     except KeyboardInterrupt:
         print("\nConsumer остановлен")
