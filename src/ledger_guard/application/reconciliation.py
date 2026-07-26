@@ -90,25 +90,4 @@ class ReconciliationEngine:
         if event_times != sorted(event_times):
             return ReconciliationStatus.INVALID_SEQUENCE
 
-        events_by_type = {
-            event.event_type: event
-            for event in unique_events
-        }
-
-        expected_order = [
-            EventType.DEPOSIT_CREATED,
-            EventType.MONEY_DEBITED,
-            EventType.TRANSFER_COMPLETED,
-            EventType.FUNDS_CREDITED,
-        ]
-
-        # Порядок проверяем по времени возникновения, а не по приходу сообщений.
-        event_times = [
-            events_by_type[event_type].occurred_at
-            for event_type in expected_order
-        ]
-
-        if event_times != sorted(event_times):
-            return ReconciliationStatus.INVALID_SEQUENCE
-
         return ReconciliationStatus.MATCHED
