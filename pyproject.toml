@@ -12,6 +12,7 @@ dependencies = [
     "psycopg[binary]",
     "fastapi",
     "uvicorn",
+    "confluent-kafka>=2.15,<3.0",
 ]
 
 [tool.setuptools.packages.find]
