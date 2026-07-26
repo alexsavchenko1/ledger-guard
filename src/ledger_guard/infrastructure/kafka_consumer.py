@@ -5,6 +5,8 @@ from decimal import InvalidOperation
 from confluent_kafka import Consumer
 
 from ledger_guard.application.reconciliation import ReconciliationEngine
+from ledger_guard.domain.enums import ReconciliationStatus
+from ledger_guard.domain.models import OperationEvent
 from ledger_guard.event_reader import parse_event
 from ledger_guard.infrastructure.event_repository import EventRepository
 from ledger_guard.infrastructure.result_repository import ResultRepository
@@ -16,6 +18,33 @@ DATABASE_URL = os.getenv(
     "DATABASE_URL",
     "postgresql://ledger_guard:ledger_guard@localhost:5433/ledger_guard",
 )
+
+
+def process_message(
+    raw_value: bytes,
+    event_repository: EventRepository,
+    result_repository: ResultRepository,
+    engine: ReconciliationEngine,
+) -> tuple[OperationEvent, bool, int, ReconciliationStatus]:
+    json_text = raw_value.decode("utf-8")
+    event_data = json.loads(json_text)
+    event = parse_event(event_data)
+
+    saved = event_repository.save(event)
+
+    operation_events = event_repository.get_by_operation_id(
+        event.operation_id
+    )
+
+    status = engine.reconcile(operation_events)
+
+    result_repository.save(
+        operation_id=event.operation_id,
+        status=status,
+        events_count=len(operation_events),
+    )
+
+    return event, saved, len(operation_events), status
 
 
 def main() -> None:
@@ -54,9 +83,12 @@ def main() -> None:
                 continue
 
             try:
-                json_text = raw_value.decode("utf-8")
-                event_data = json.loads(json_text)
-                event = parse_event(event_data)
+                event, saved, events_count, status = process_message(
+                    raw_value=raw_value,
+                    event_repository=event_repository,
+                    result_repository=result_repository,
+                    engine=engine,
+                )
             except (
                 UnicodeDecodeError,
                 json.JSONDecodeError,
@@ -68,20 +100,6 @@ def main() -> None:
                 print(f"Не удалось разобрать сообщение: {error}")
                 continue
 
-            saved = event_repository.save(event)
-
-            operation_events = event_repository.get_by_operation_id(
-                event.operation_id
-            )
-
-            status = engine.reconcile(operation_events)
-
-            result_repository.save(
-                operation_id=event.operation_id,
-                status=status,
-                events_count=len(operation_events),
-            )
-
             consumer.commit(
                 message=message,
                 asynchronous=False,
@@ -90,9 +108,8 @@ def main() -> None:
             print()
             print("Получено событие:")
             print(event)
-
             print("Событие сохранено:", saved)
-            print("Количество событий операции:", len(operation_events))
+            print("Количество событий операции:", events_count)
             print("Статус сверки:", status.value)
             print(
                 "Kafka offset подтверждён:",
