@@ -8,8 +8,15 @@ version = "0.1.0"
 description = "Event-driven financial operation reconciliation system"
 requires-python = ">=3.13"
 
+dependencies = [
+    "psycopg[binary]",
+    "fastapi",
+    "uvicorn",
+]
+
 [tool.setuptools.packages.find]
 where = ["src"]
+
 
 [project.optional-dependencies]
 dev = [
