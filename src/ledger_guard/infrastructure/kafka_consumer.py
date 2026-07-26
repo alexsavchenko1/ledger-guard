@@ -1,6 +1,9 @@
 import json
+from decimal import InvalidOperation
 
 from confluent_kafka import Consumer
+
+from ledger_guard.event_reader import parse_event
 
 
 TOPIC = "operation-events"
@@ -40,7 +43,15 @@ def main() -> None:
             try:
                 json_text = raw_value.decode("utf-8")
                 event_data = json.loads(json_text)
-            except (UnicodeDecodeError, json.JSONDecodeError) as error:
+                event = parse_event(event_data)
+            except (
+                UnicodeDecodeError,
+                json.JSONDecodeError,
+                KeyError,
+                TypeError,
+                ValueError,
+                InvalidOperation,
+            ) as error:
                 print(f"Не удалось разобрать сообщение: {error}")
                 continue
 
@@ -58,6 +69,11 @@ def main() -> None:
             print("3. JSON-строка преобразована в словарь:")
             print(type(event_data))
             print(event_data)
+
+            print()
+            print("4. Словарь преобразован в OperationEvent:")
+            print(type(event))
+            print(event)
 
     except KeyboardInterrupt:
         print("\nConsumer остановлен")
