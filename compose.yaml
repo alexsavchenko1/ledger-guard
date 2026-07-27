@@ -18,10 +18,24 @@ services:
       retries: 10
 
 
+  kafka-volume-init:
+    image: apache/kafka:4.3.1
+    container_name: ledger-guard-kafka-volume-init
+    user: "0:0"
+    volumes:
+      - ledger_guard_kafka_data:/tmp/kraft-combined-logs
+    entrypoint:
+      - /bin/sh
+      - -c
+      - 'chown -R 1000:1000 /tmp/kraft-combined-logs'
+
   kafka:
     image: apache/kafka:4.3.1
     hostname: kafka
     container_name: ledger-guard-kafka
+    depends_on:
+      kafka-volume-init:
+        condition: service_completed_successfully
     ports:
       - "9092:9092"
     environment:
@@ -37,6 +51,32 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
+      CLUSTER_ID: 4L6g3nShT-eMCtK--X86sw
+    volumes:
+      - ledger_guard_kafka_data:/tmp/kraft-combined-logs
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:29092 --list >/dev/null 2>&1
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+  kafka-init:
+    image: apache/kafka:4.3.1
+    container_name: ledger-guard-kafka-init
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    depends_on:
+      kafka:
+        condition: service_healthy
+    volumes:
+      - ./scripts/create_kafka_topics.sh:/scripts/create_kafka_topics.sh:ro
+    entrypoint:
+      - /bin/sh
+      - /scripts/create_kafka_topics.sh
 
   consumer:
     build:
@@ -47,9 +87,12 @@ services:
       DATABASE_URL: postgresql://ledger_guard:ledger_guard@postgres:5432/ledger_guard
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
     depends_on:
-      - postgres
-      - kafka
+      postgres:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
     restart: unless-stopped
 
 volumes:
   ledger_guard_postgres_data:
+  ledger_guard_kafka_data:
