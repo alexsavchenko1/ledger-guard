@@ -93,6 +93,28 @@ services:
         condition: service_completed_successfully
     restart: unless-stopped
 
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ledger-guard-api
+    command:
+      - uvicorn
+      - ledger_guard.api:app
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8000"
+    environment:
+      DATABASE_URL: postgresql://ledger_guard:ledger_guard@postgres:5432/ledger_guard
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
 volumes:
   ledger_guard_postgres_data:
   ledger_guard_kafka_data:
