@@ -69,10 +69,7 @@ class ReconciliationEngine:
             if event.source != expected_sources[event.event_type]:
                 return ReconciliationStatus.DATA_MISMATCH
 
-        events_by_type = {
-            event.event_type: event
-            for event in unique_events
-        }
+        events_by_type = {event.event_type: event for event in unique_events}
 
         expected_order = [
             EventType.DEPOSIT_CREATED,
@@ -83,8 +80,7 @@ class ReconciliationEngine:
 
         # Порядок проверяем по времени возникновения, а не по приходу сообщений.
         event_times = [
-            events_by_type[event_type].occurred_at
-            for event_type in expected_order
+            events_by_type[event_type].occurred_at for event_type in expected_order
         ]
 
         if event_times != sorted(event_times):

@@ -28,7 +28,6 @@ def make_event(
     )
 
 
-
 def make_valid_events() -> list[OperationEvent]:
     return [
         make_event(EventType.DEPOSIT_CREATED),
@@ -36,6 +35,7 @@ def make_valid_events() -> list[OperationEvent]:
         make_event(EventType.TRANSFER_COMPLETED),
         make_event(EventType.FUNDS_CREDITED),
     ]
+
 
 def test_returns_pending_when_events_are_missing() -> None:
     engine = ReconciliationEngine()
@@ -139,23 +139,6 @@ def test_returns_data_mismatch_when_same_event_id_has_different_data() -> None:
     assert result == ReconciliationStatus.DATA_MISMATCH
 
 
-def test_returns_data_mismatch_when_same_event_id_has_different_data() -> None:
-    engine = ReconciliationEngine()
-    events = make_valid_events()
-
-    duplicate_event = make_event(
-        EventType.TRANSFER_COMPLETED,
-        amount=Decimal("14900.00"),
-    )
-    duplicate_event.event_id = events[2].event_id
-
-    events.append(duplicate_event)
-
-    result = engine.reconcile(events)
-
-    assert result == ReconciliationStatus.DATA_MISMATCH
-
-
 def test_returns_data_mismatch_for_wrong_event_source() -> None:
     engine = ReconciliationEngine()
     events = make_valid_events()
@@ -165,34 +148,6 @@ def test_returns_data_mismatch_for_wrong_event_source() -> None:
     result = engine.reconcile(events)
 
     assert result == ReconciliationStatus.DATA_MISMATCH
-
-
-def test_returns_invalid_sequence_for_wrong_event_order() -> None:
-    engine = ReconciliationEngine()
-    base_time = datetime(2026, 7, 24, 12, 0, tzinfo=UTC)
-
-    events = [
-        make_event(
-            EventType.DEPOSIT_CREATED,
-            occurred_at=base_time,
-        ),
-        make_event(
-            EventType.MONEY_DEBITED,
-            occurred_at=base_time.replace(minute=3),
-        ),
-        make_event(
-            EventType.TRANSFER_COMPLETED,
-            occurred_at=base_time.replace(minute=2),
-        ),
-        make_event(
-            EventType.FUNDS_CREDITED,
-            occurred_at=base_time.replace(minute=4),
-        ),
-    ]
-
-    result = engine.reconcile(events)
-
-    assert result == ReconciliationStatus.INVALID_SEQUENCE
 
 
 def test_returns_invalid_sequence_for_wrong_event_order() -> None:

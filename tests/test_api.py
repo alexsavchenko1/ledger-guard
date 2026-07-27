@@ -1,13 +1,11 @@
 import os
 
 import psycopg
-
 from fastapi.testclient import TestClient
 
 from ledger_guard.api import app
 from ledger_guard.domain.enums import ReconciliationStatus
 from ledger_guard.infrastructure.result_repository import ResultRepository
-
 
 DATABASE_URL = os.getenv(
     "DATABASE_URL",

@@ -1,4 +1,5 @@
-from datetime import datetime, timezone
+from collections.abc import Iterator
+from datetime import UTC, datetime
 from decimal import Decimal
 from uuid import uuid4
 
@@ -9,10 +10,7 @@ from ledger_guard.domain.enums import EventType
 from ledger_guard.domain.models import OperationEvent
 from ledger_guard.infrastructure.event_repository import EventRepository
 
-
-DATABASE_URL = (
-    "postgresql://ledger_guard:ledger_guard@localhost:5433/ledger_guard"
-)
+DATABASE_URL = "postgresql://ledger_guard:ledger_guard@localhost:5433/ledger_guard"
 
 
 @pytest.fixture
@@ -21,7 +19,7 @@ def repository() -> EventRepository:
 
 
 @pytest.fixture
-def operation_id() -> str:
+def operation_id() -> Iterator[str]:
     operation_id = f"op-test-{uuid4()}"
 
     yield operation_id
@@ -56,7 +54,7 @@ def make_event(
             26,
             12,
             0,
-            tzinfo=timezone.utc,
+            tzinfo=UTC,
         ),
     )
 

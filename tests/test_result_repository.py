@@ -5,7 +5,6 @@ import psycopg
 from ledger_guard.domain.enums import ReconciliationStatus
 from ledger_guard.infrastructure.result_repository import ResultRepository
 
-
 CONNECTION_STRING = os.getenv(
     "DATABASE_URL",
     "postgresql://ledger_guard:ledger_guard@localhost:5433/ledger_guard",

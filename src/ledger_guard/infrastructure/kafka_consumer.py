@@ -13,7 +13,6 @@ from ledger_guard.event_reader import parse_event
 from ledger_guard.infrastructure.event_repository import EventRepository
 from ledger_guard.infrastructure.result_repository import ResultRepository
 
-
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
     "postgresql://ledger_guard:ledger_guard@localhost:5433/ledger_guard",
@@ -47,23 +46,16 @@ LOG_LEVEL = os.getenv(
 
 logging.basicConfig(
     level=LOG_LEVEL,
-    format=(
-        "%(asctime)s "
-        "%(levelname)s "
-        "%(name)s "
-        "%(message)s"
-    ),
+    format=("%(asctime)s %(levelname)s %(name)s %(message)s"),
 )
 
 logger = logging.getLogger(__name__)
 
 
 class DlqProducer(Protocol):
-    def produce(self, topic: str, value: bytes) -> None:
-        pass
+    def produce(self, topic: str, value: bytes) -> None: ...
 
-    def flush(self, timeout: float) -> int:
-        pass
+    def flush(self, timeout: float) -> int: ...
 
 
 def send_to_dlq(
@@ -99,9 +91,7 @@ def send_to_dlq(
     messages_left = producer.flush(10.0)
 
     if messages_left != 0:
-        raise RuntimeError(
-            "Не удалось отправить сообщение в DLQ"
-        )
+        raise RuntimeError("Не удалось отправить сообщение в DLQ")
 
 
 def process_message(
@@ -116,9 +106,7 @@ def process_message(
 
     saved = event_repository.save(event)
 
-    operation_events = event_repository.get_by_operation_id(
-        event.operation_id
-    )
+    operation_events = event_repository.get_by_operation_id(event.operation_id)
 
     status = engine.reconcile(operation_events)
 
@@ -175,11 +163,21 @@ def main() -> None:
                 continue
 
             raw_value = message.value()
+            source_topic = message.topic()
+            source_partition = message.partition()
+            source_offset = message.offset()
+
+            if (
+                source_topic is None
+                or source_partition is None
+                or source_offset is None
+            ):
+                logger.error("Получено Kafka-сообщение без метаданных")
+                continue
 
             if raw_value is None:
                 logger.warning(
-                    "Получено сообщение без value: "
-                    "topic=%s partition=%s offset=%s",
+                    "Получено сообщение без value: topic=%s partition=%s offset=%s",
                     message.topic(),
                     message.partition(),
                     message.offset(),
@@ -204,9 +202,9 @@ def main() -> None:
                 send_to_dlq(
                     raw_value=raw_value,
                     error=error,
-                    source_topic=message.topic(),
-                    source_partition=message.partition(),
-                    source_offset=message.offset(),
+                    source_topic=source_topic,
+                    source_partition=source_partition,
+                    source_offset=source_offset,
                     producer=producer,
                 )
 

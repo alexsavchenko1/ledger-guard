@@ -1,4 +1,5 @@
 import json
+from collections.abc import Iterator
 from uuid import uuid4
 
 import psycopg
@@ -8,20 +9,15 @@ from ledger_guard.application.reconciliation import ReconciliationEngine
 from ledger_guard.domain.enums import EventType, ReconciliationStatus
 from ledger_guard.infrastructure.event_repository import EventRepository
 from ledger_guard.infrastructure.kafka_consumer import (
-    DLQ_TOPIC,
     process_message,
-    send_to_dlq,
 )
 from ledger_guard.infrastructure.result_repository import ResultRepository
 
-
-DATABASE_URL = (
-    "postgresql://ledger_guard:ledger_guard@localhost:5433/ledger_guard"
-)
+DATABASE_URL = "postgresql://ledger_guard:ledger_guard@localhost:5433/ledger_guard"
 
 
 @pytest.fixture
-def operation_id() -> str:
+def operation_id() -> Iterator[str]:
     operation_id = f"op-kafka-test-{uuid4()}"
 
     yield operation_id

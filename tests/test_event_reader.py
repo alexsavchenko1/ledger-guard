@@ -46,7 +46,7 @@ def test_read_events_rejects_non_object_item(tmp_path) -> None:
 def test_read_events_rejects_negative_amount(tmp_path) -> None:
     file_path = tmp_path / "events.json"
     file_path.write_text(
-        '''
+        """
 [
   {
     "event_id": "event-1",
@@ -59,7 +59,7 @@ def test_read_events_rejects_negative_amount(tmp_path) -> None:
     "occurred_at": "2026-07-24T12:00:00+00:00"
   }
 ]
-''',
+""",
         encoding="utf-8",
     )
 
@@ -74,7 +74,7 @@ def test_read_events_rejects_negative_amount(tmp_path) -> None:
 def test_read_events_rejects_unsupported_currency(tmp_path) -> None:
     file_path = tmp_path / "events.json"
     file_path.write_text(
-        '''
+        """
 [
   {
     "event_id": "event-1",
@@ -87,7 +87,7 @@ def test_read_events_rejects_unsupported_currency(tmp_path) -> None:
     "occurred_at": "2026-07-24T12:00:00+00:00"
   }
 ]
-''',
+""",
         encoding="utf-8",
     )
 
@@ -102,7 +102,7 @@ def test_read_events_rejects_unsupported_currency(tmp_path) -> None:
 def test_read_events_rejects_empty_identifiers(tmp_path) -> None:
     file_path = tmp_path / "events.json"
     file_path.write_text(
-        '''
+        """
 [
   {
     "event_id": "",
@@ -115,7 +115,7 @@ def test_read_events_rejects_empty_identifiers(tmp_path) -> None:
     "occurred_at": "2026-07-24T12:00:00+00:00"
   }
 ]
-''',
+""",
         encoding="utf-8",
     )
 
@@ -130,7 +130,7 @@ def test_read_events_rejects_empty_identifiers(tmp_path) -> None:
 def test_read_events_rejects_empty_source(tmp_path) -> None:
     file_path = tmp_path / "events.json"
     file_path.write_text(
-        '''
+        """
 [
   {
     "event_id": "event-1",
@@ -143,7 +143,7 @@ def test_read_events_rejects_empty_source(tmp_path) -> None:
     "occurred_at": "2026-07-24T12:00:00+00:00"
   }
 ]
-''',
+""",
         encoding="utf-8",
     )
 

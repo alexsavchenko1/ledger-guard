@@ -10,7 +10,6 @@ from ledger_guard.domain.enums import EventType
 from ledger_guard.domain.models import OperationEvent
 from ledger_guard.infrastructure.result_repository import ResultRepository
 
-
 app = FastAPI(title="Ledger Guard")
 
 
