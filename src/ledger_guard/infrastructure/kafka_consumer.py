@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 from decimal import InvalidOperation
 from typing import Protocol
@@ -13,9 +14,6 @@ from ledger_guard.infrastructure.event_repository import EventRepository
 from ledger_guard.infrastructure.result_repository import ResultRepository
 
 
-TOPIC = "operation-events"
-DLQ_TOPIC = "operation-events-dlq"
-
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
     "postgresql://ledger_guard:ledger_guard@localhost:5433/ledger_guard",
@@ -25,6 +23,39 @@ KAFKA_BOOTSTRAP_SERVERS = os.getenv(
     "KAFKA_BOOTSTRAP_SERVERS",
     "localhost:9092",
 )
+
+KAFKA_TOPIC = os.getenv(
+    "KAFKA_TOPIC",
+    "operation-events",
+)
+
+DLQ_TOPIC = os.getenv(
+    "KAFKA_DLQ_TOPIC",
+    "operation-events-dlq",
+)
+
+KAFKA_GROUP_ID = os.getenv(
+    "KAFKA_GROUP_ID",
+    "ledger-guard-consumer",
+)
+
+LOG_LEVEL = os.getenv(
+    "LOG_LEVEL",
+    "INFO",
+).upper()
+
+
+logging.basicConfig(
+    level=LOG_LEVEL,
+    format=(
+        "%(asctime)s "
+        "%(levelname)s "
+        "%(name)s "
+        "%(message)s"
+    ),
+)
+
+logger = logging.getLogger(__name__)
 
 
 class DlqProducer(Protocol):
@@ -108,7 +139,7 @@ def main() -> None:
     consumer = Consumer(
         {
             **kafka_config,
-            "group.id": "ledger-guard-debug",
+            "group.id": KAFKA_GROUP_ID,
             "auto.offset.reset": "earliest",
             "enable.auto.commit": False,
         }
@@ -120,9 +151,14 @@ def main() -> None:
     result_repository = ResultRepository(DATABASE_URL)
     engine = ReconciliationEngine()
 
-    consumer.subscribe([TOPIC])
+    consumer.subscribe([KAFKA_TOPIC])
 
-    print(f"Ожидаю сообщения из топика {TOPIC}")
+    logger.info(
+        "Consumer запущен: topic=%s group_id=%s broker=%s",
+        KAFKA_TOPIC,
+        KAFKA_GROUP_ID,
+        KAFKA_BOOTSTRAP_SERVERS,
+    )
 
     try:
         while True:
@@ -132,13 +168,22 @@ def main() -> None:
                 continue
 
             if message.error():
-                print(f"Ошибка Kafka: {message.error()}")
+                logger.error(
+                    "Ошибка получения Kafka-сообщения: %s",
+                    message.error(),
+                )
                 continue
 
             raw_value = message.value()
 
             if raw_value is None:
-                print("Получено сообщение без value")
+                logger.warning(
+                    "Получено сообщение без value: "
+                    "topic=%s partition=%s offset=%s",
+                    message.topic(),
+                    message.partition(),
+                    message.offset(),
+                )
                 continue
 
             try:
@@ -170,10 +215,14 @@ def main() -> None:
                     asynchronous=False,
                 )
 
-                print()
-                print("Битое сообщение отправлено в DLQ")
-                print("Ошибка:", error)
-                print("Kafka offset подтверждён:", message.offset())
+                logger.warning(
+                    "Сообщение отправлено в DLQ: "
+                    "topic=%s partition=%s offset=%s error=%s",
+                    message.topic(),
+                    message.partition(),
+                    message.offset(),
+                    error,
+                )
                 continue
 
             consumer.commit(
@@ -181,22 +230,33 @@ def main() -> None:
                 asynchronous=False,
             )
 
-            print()
-            print("Получено событие:")
-            print(event)
-            print("Событие сохранено:", saved)
-            print("Количество событий операции:", events_count)
-            print("Статус сверки:", status.value)
-            print(
-                "Kafka offset подтверждён:",
+            logger.info(
+                "Событие обработано: "
+                "operation_id=%s event_id=%s saved=%s "
+                "events_count=%s status=%s "
+                "partition=%s offset=%s",
+                event.operation_id,
+                event.event_id,
+                saved,
+                events_count,
+                status.value,
+                message.partition(),
                 message.offset(),
             )
 
     except KeyboardInterrupt:
-        print("\nConsumer остановлен")
+        logger.info("Consumer остановлен пользователем")
     finally:
-        producer.flush(5.0)
+        messages_left = producer.flush(5.0)
+
+        if messages_left:
+            logger.warning(
+                "При завершении не отправлено сообщений: %s",
+                messages_left,
+            )
+
         consumer.close()
+        logger.info("Kafka consumer закрыт")
 
 
 if __name__ == "__main__":

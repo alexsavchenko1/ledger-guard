@@ -69,6 +69,10 @@ services:
     container_name: ledger-guard-kafka-init
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      KAFKA_TOPIC: operation-events
+      KAFKA_DLQ_TOPIC: operation-events-dlq
+      KAFKA_GROUP_ID: ledger-guard-consumer
+      LOG_LEVEL: INFO
     depends_on:
       kafka:
         condition: service_healthy
