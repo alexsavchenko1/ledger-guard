@@ -1,0 +1,11 @@
+.git
+.github
+.ledgerguard
+.pytest_cache
+.ruff_cache
+.pyright
+__pycache__
+*.pyc
+tests
+examples
+README.md
